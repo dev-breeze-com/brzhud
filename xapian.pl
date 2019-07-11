@@ -47,7 +47,8 @@ use Search::Xapian::Database;
 use Search::Xapian::QueryParser;
 use Search::Xapian::WritableDatabase;
  
-our $USER = undef;
+our $USER = getpwuid( $< );
+
 our $EXTENSIONS = "^(txt|csv|html|png|jpg|jpeg|gif|svg|xpm|mov|avi|mkv|doc|htm)\$";
 our $MMEDIA = "^(png|jpg|jpeg|gif|svg|xpm|mov|avi|mkv)\$";
 
@@ -57,15 +58,19 @@ our	$STEMMER = undef;
 our $MAXHITS = 250;
 
 sub open_write_db {
-	#$DB = Search::Xapian::Database->new( "/var/lib/brzidx/${user}/xapian.db", DB_OPEN );
+	my $user = shift;
+	my $dbpath = "/var/lib/brzidx/xapian/${user}.db"
+
 	$DB = Search::Xapian::WritableDatabase->new(
-		"/mnt/sdb10-home/pierre/xapian/xapian.db",
-		Search::Xapian::DB_CREATE_OR_OPEN
+		$dbpath, Search::Xapian::DB_CREATE_OR_OPEN
 	);
 };
 
 sub open_read_db {
-	$DB = Search::Xapian::Database->new( "/mnt/sdb10-home/pierre/xapian/xapian.db" );
+	my $user = shift;
+	my $dbpath = "/var/lib/brzidx/xapian/${user}.db"
+
+	$DB = Search::Xapian::Database->new( $dbpath );
 	$QP = new Search::Xapian::QueryParser($DB);
 };
 
@@ -196,10 +201,10 @@ foreach my $arg (@ARGV) {
 	if ($arg =~ m/^[-]+[a-z]*/) {
 		if ($arg =~ m/^[-]+(search)$/) {
 			$dosearch = "yes";
-			open_read_db;
+			open_read_db( $USER );
 		} elsif ($arg =~ m/^[-]+(index)$/) {
 			$doindex = "yes";
-			open_write_db;
+			open_write_db( $USER );
 		} elsif ($arg =~ m/^[-]+(extended)$/) {
 			$extended = "yes";
 		} elsif ($arg =~ m/^[-]+(user|stemmer|maxhits)$/) {
